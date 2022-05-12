@@ -42,7 +42,7 @@ int servopin=2;//设置舵机驱动脚到数字口2
 int myangle;//定义角度变量
 int pulsewidth;//定义脉宽变量
 int val;
-float Fdistance_final;
+int Fdistance_final;
 int UDCcount=0;
 void setup()
 {
@@ -67,16 +67,16 @@ void setup()
 }
 //=======================智能小车的基本动作=========================
 //void run(int time)     // 前进
-void run()     // 前进
+void run(int DC)     // 前进
 {
   digitalWrite(Right_motor_go,HIGH);  // 右电机前进
   digitalWrite(Right_motor_back,LOW);     
-  analogWrite(Right_motor_go,100);//PWM比例0~255调速，左右轮差异略增减
+  analogWrite(Right_motor_go,DC);//PWM比例0~255调速，左右轮差异略增减
   analogWrite(Right_motor_back,0);
   digitalWrite(Left_motor_go,LOW);  // 左电机前进
   digitalWrite(Left_motor_back,HIGH);
   analogWrite(Left_motor_go,0);//PWM比例0~255调速，左右轮差异略增减
-  analogWrite(Left_motor_back,100);
+  analogWrite(Left_motor_back,DC);
   //delay(time * 100);   //执行时间，可以调整  
 }
 
@@ -183,7 +183,7 @@ void keysacn()//按键扫描
 float Distance_test()   // 量出前方距离 
 {
 
-  int UDCcount=0;
+  // int UDCcount=0;
   
  
   digitalWrite(Trig, LOW);   // 给触发脚低电平2μs
@@ -191,19 +191,19 @@ float Distance_test()   // 量出前方距离
   digitalWrite(Trig, HIGH);  // 给触发脚高电平10μs，这里至少是10μs
   delayMicroseconds(10);
   digitalWrite(Trig, LOW);    // 持续给触发脚低电
-  UDCcount=UDCcount+1;
+  // UDCcount=UDCcount+1;
   float Fdistance = pulseIn(Echo, HIGH);  // 读取高电平时间(单位：微秒)
   Fdistance= Fdistance/58;       //为什么除以58等于厘米，  Y米=（X秒*344）/2
-  Fdistance_final=Fdistance_final*0.9+0.1*Fdistance;
+  // Fdistance_final=Fdistance_final*0.9+0.1*Fdistance;
   // X秒=（ 2*Y米）/344 ==》X秒=0.0058*Y米 ==》厘米=微秒/58
-  Serial.print("Distance:");      //输出距离（单位：厘米）
- Serial.println(Fdistance);  
- Serial.print("\n FinalDistance:");//显示距离
- Serial.println(Fdistance_final);         //显示距离
+//   Serial.print("Distance:");      //输出距离（单位：厘米）
+//  Serial.println(Fdistance);  
+//  Serial.print("\n FinalDistance:");//显示距离
+//  Serial.println(Fdistance_final);         //显示距离
 
   
  // Distance = Fdistance;
-  return Fdistance_final;
+  return Fdistance;
 }  
 
 void Distance_display(int Distance)//显示距离
@@ -238,7 +238,7 @@ void servopulse(int servopin,int myangle)/*定义一个脉冲函数，用来模�
 void front_detection()
 {
   //此处循环次数减少，为了增加小车遇到障碍物的反应速度
-  for(int i=0;i<=5;i++) //产生PWM个数，等效延时以保证能转到响应角度
+  for(int i=0;i<=15;i++) //产生PWM个数，等效延时以保证能转到响应角度
   {
     servopulse(servopin,90);//模拟产生PWM
   }
@@ -275,39 +275,40 @@ void loop()
   keysacn();     //调用按键扫描函数
   while(1)
   {
-//    SR_2 = digitalRead(SensorRight_2);
-//    Serial.print("Right_Distance:");
-//    Serial.print(SR_2);
-//    SL_2 = digitalRead(SensorLeft_2);
-//    Serial.print("Left_Distance:");
-//    Serial.print(SL_2);
+    UDCcount=UDCcount+1;
+
+    run(80);
     front_detection();//测量前方距离
-    if(Front_Distance < 30)//当遇到障碍物时
-    {
-      brake(2);//先刹车
-      back(2);//后退减速
-      brake(2);//停下来做测距
-      left_detection();//测量左边距障碍物距离
-      Distance_display(Left_Distance);//液晶屏显示距离
-      right_detection();//测量右边距障碍物距离
-      Distance_display(Right_Distance);//液晶屏显示距离
-      if((Left_Distance < 30 ) &&( Right_Distance < 30 ))//当左右两侧均有障碍物靠得比较近
-        spin_left(0.7);//旋转掉头
-      else if(Left_Distance > Right_Distance)//左边比右边空旷
-      {      
-        left(3);//左转
-        brake(1);//刹车，稳定方向
-      }
-      else//右边比左边空旷
-      {
-        right(3);//右转
-        brake(1);//刹车，稳定方向
-      }
-    }
-    else
-    {
-      run(); //无障碍物，直行     
-    }
+    Fdistance_final=Front_Distance/1;
+    Serial.println("DC=80");
+    Serial.println(Fdistance_final);
+    Serial.println(UDCcount);
+    // if(Front_Distance < 30)//当遇到障碍物时
+    // {
+    //   brake(2);//先刹车
+    //   back(2);//后退减速
+    //   brake(2);//停下来做测距
+    //   left_detection();//测量左边距障碍物距离
+    //   Distance_display(Left_Distance);//液晶屏显示距离
+    //   right_detection();//测量右边距障碍物距离
+    //   Distance_display(Right_Distance);//液晶屏显示距离
+    //   if((Left_Distance < 30 ) &&( Right_Distance < 30 ))//当左右两侧均有障碍物靠得比较近
+    //     spin_left(0.7);//旋转掉头
+    //   else if(Left_Distance > Right_Distance)//左边比右边空旷
+    //   {      
+    //     left(3);//左转
+    //     brake(1);//刹车，稳定方向
+    //   }
+    //   else//右边比左边空旷
+    //   {
+    //     right(3);//右转
+    //     brake(1);//刹车，稳定方向
+    //   }
+    // }
+    // else
+    // {
+    //   run(50); //无障碍物，直行     
+    // }
   } 
 }
 
